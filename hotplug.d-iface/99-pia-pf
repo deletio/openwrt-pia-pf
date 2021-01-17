@@ -1,0 +1,29 @@
+#!/bin/sh
+
+PIA_USER=`head -1 /etc/openvpn/pia.auth`
+PIA_PASS=`tail -1 /etc/openvpn/pia.auth`
+
+if [ "${ACTION}" = "ifup" -a "${DEVICE}" = "tun0" ]; then
+    GW=$(ifconfig tun0 | grep 'inet addr' | cut -d: -f2 | cut -d' ' -f1 | sed 's/[^\.]*$/1/')
+
+    token_script="PIA_USER=${PIA_USER} PIA_PASS=${PIA_PASS} PIA_COUNTRY=Japan /usr/local/pia/manual-connections/get_token.sh"
+    logger -t hotplug "Trying to get the PIA host and token"
+    logger -t hotplug ${token_script}
+    host_token=$(eval ${token_script})
+    host="$(echo ${host_token} | cut -d' ' -f1)"
+    token="$(echo ${host_token} | cut -d' ' -f2)"
+
+    logger -t hotplug "PIA VPN is up w/ gateway ${GW}, host ${host} and token"
+    logger -t hotplug ${token}
+
+
+    pf_script="PF_GATEWAY=${GW} PF_HOSTNAME=${host} PIA_TOKEN=\"${token}\" /usr/local/pia/manual-connections/port_forwarding.sh &"
+    logger -t hotplug "Starting the port forwarding script"
+    logger -t hotplug ${pf_script} 
+    eval ${pf_script}
+fi
+
+if [ "${ACTION}" = "ifdown" ]; then
+    logger -t hotplug "Will try to kill the port forwarding script in case it's running"
+    ps | grep port_forwarding | sed 's/^ //' |  cut -d' ' -f 1 | xargs kill
+fi

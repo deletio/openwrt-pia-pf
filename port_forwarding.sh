@@ -58,7 +58,7 @@ if [[ ! $PAYLOAD_AND_SIGNATURE ]]; then
   echo "Getting new signature..."
   payload_and_signature="$(curl -s -m 5 \
     --connect-to "$PF_HOSTNAME::$PF_GATEWAY:" \
-    --cacert "ca.rsa.4096.crt" \
+    --cacert `dirname $0`/"ca.rsa.4096.crt" \
     -G --data-urlencode "token=${PIA_TOKEN}" \
     "https://${PF_HOSTNAME}:19999/getSignature")"
 else
@@ -104,7 +104,7 @@ Trying to bind the port..."
 while true; do
   bind_port_response="$(curl -Gs -m 5 \
     --connect-to "$PF_HOSTNAME::$PF_GATEWAY:" \
-    --cacert "ca.rsa.4096.crt" \
+    --cacert `dirname $0`/"ca.rsa.4096.crt" \
     --data-urlencode "payload=${payload}" \
     --data-urlencode "signature=${signature}" \
     "https://${PF_HOSTNAME}:19999/bindPort")"
@@ -118,7 +118,7 @@ while true; do
       exit 1
     fi
     echo Port $port refreshed on $(date). \
-      This port will expire on $(date --date="$expires_at")
+      This port will expire on $(date --date="`echo $expires_at | sed 's/T/ /' | sed 's/\..*$//'`")
 
     # sleep 15 minutes
     sleep 900

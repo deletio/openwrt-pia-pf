@@ -58,13 +58,13 @@ printServerLatency() {
     --write-out "%{time_connect}" \
     http://$serverIP:443)
   if [ $? -eq 0 ]; then
-    >&2 echo Got latency ${time}s for region: $regionName
+    #>&2 echo Got latency ${time}s for region: $regionName
     >&1 echo $time $regionID $serverIP
   fi
 }
 export -f printServerLatency
 
-echo -n "Getting the server list... "
+#echo -n "Getting the server list... "
 # Get all region data since we will need this on multiple occasions
 all_region_data=$(curl -s "$serverlist_url" | head -1)
 
@@ -76,12 +76,12 @@ if [[ ${#all_region_data} -lt 1000 ]]; then
   exit 1
 fi
 # Notify the user that we got the server list.
-echo "OK!"
+#echo "OK!"
 
 # Leave regions only
 # If you know which country you need, we will just pick it from the list.
 if [[ $PIA_COUNTRY != "" ]]; then                 
-  echo Country of choice is "$PIA_COUNTRY", trying to select a corresponding server
+#  echo Country of choice is "$PIA_COUNTRY", trying to select a corresponding server
   regions_only="$( echo $all_region_data |                                 
     jq --arg pia_country $PIA_COUNTRY -r '.regions[] | select(.name | contains($pia_country))' )"
 else
@@ -91,8 +91,8 @@ fi
 # Test one server from each region to get the closest region.
 # If port forwarding is enabled, filter out regions that don't support it.
 if [[ $PIA_PF == "true" ]]; then
-  echo Port Forwarding is enabled, so regions that do not support
-  echo port forwarding will get filtered out.
+#  echo Port Forwarding is enabled, so regions that do not support
+#  echo port forwarding will get filtered out.
   summarized_region_data="$( echo $regions_only |
     jq -r 'select(.port_forward==true) |
     .servers.meta[0].ip+" "+.id+" "+.name+" "+(.geo|tostring)' )"
@@ -106,8 +106,8 @@ fi
 #summarized_region_data="$(echo $summarized_region_data | xargs -I{} -d"," echo {} | sed 's/^ *//')"
 #echo xxx $summarized_region_data xxx
 
-echo Testing regions that respond \
-  faster than $MAX_LATENCY seconds:
+#echo Testing regions that respond \
+#  faster than $MAX_LATENCY seconds:
 bestRegion="$(echo "$summarized_region_data" |
   xargs -I{} bash -c 'printServerLatency {}' |
   sort | head -1 | awk '{ print $2 }')"
@@ -125,13 +125,13 @@ regionData="$( echo $all_region_data |
   jq --arg REGION_ID "$bestRegion" -r \
   '.regions[] | select(.id==$REGION_ID)')"
 
-echo -n The closest region is "$(echo $regionData | jq -r '.name')"
-if echo $regionData | jq -r '.geo' | grep true > /dev/null; then
-  echo " (geolocated region)."
-else
-  echo "."
-fi
-echo
+#echo -n The closest region is "$(echo $regionData | jq -r '.name')"
+#if echo $regionData | jq -r '.geo' | grep true > /dev/null; then
+#  echo " (geolocated region)."
+#else
+#  echo "."
+#fi
+#echo
 bestServer_meta_IP="$(echo $regionData | jq -r '.servers.meta[0].ip')"
 bestServer_meta_hostname="$(echo $regionData | jq -r '.servers.meta[0].cn')"
 bestServer_WG_IP="$(echo $regionData | jq -r '.servers.wg[0].ip')"
@@ -141,17 +141,17 @@ bestServer_OT_hostname="$(echo $regionData | jq -r '.servers.ovpntcp[0].cn')"
 bestServer_OU_IP="$(echo $regionData | jq -r '.servers.ovpnudp[0].ip')"
 bestServer_OU_hostname="$(echo $regionData | jq -r '.servers.ovpnudp[0].cn')"
 
-echo "The script found the best servers from the region closest to you.
-When connecting to an IP (no matter which protocol), please verify
-the SSL/TLS certificate actually contains the hostname so that you
-are sure you are connecting to a secure server, validated by the
-PIA authority. Please find below the list of best IPs and matching
-hostnames for each protocol:
-Meta Services: $bestServer_meta_IP // $bestServer_meta_hostname
-WireGuard: $bestServer_WG_IP // $bestServer_WG_hostname
-OpenVPN TCP: $bestServer_OT_IP // $bestServer_OT_hostname
-OpenVPN UDP: $bestServer_OU_IP // $bestServer_OU_hostname
-"
+#echo "The script found the best servers from the region closest to you.
+#When connecting to an IP (no matter which protocol), please verify
+#the SSL/TLS certificate actually contains the hostname so that you
+#are sure you are connecting to a secure server, validated by the
+#PIA authority. Please find below the list of best IPs and matching
+#hostnames for each protocol:
+#Meta Services: $bestServer_meta_IP // $bestServer_meta_hostname
+#WireGuard: $bestServer_WG_IP // $bestServer_WG_hostname
+#OpenVPN TCP: $bestServer_OT_IP // $bestServer_OT_hostname
+#OpenVPN UDP: $bestServer_OU_IP // $bestServer_OU_hostname
+#"
 
 if [[ ! $PIA_USER || ! $PIA_PASS ]]; then
   echo If you want this script to automatically get a token from the Meta
@@ -160,29 +160,30 @@ if [[ ! $PIA_USER || ! $PIA_PASS ]]; then
   exit 1
 fi
 
-echo "The ./get_region_and_token.sh script got started with PIA_USER and PIA_PASS,
-so we will also use a meta service to get a new VPN token."
+#echo "The ./get_region_and_token.sh script got started with PIA_USER and PIA_PASS,
+#so we will also use a meta service to get a new VPN token."
 
-echo "Trying to get a new token by authenticating with the meta service..."
+#echo "Trying to get a new token by authenticating with the meta service..."
 generateTokenResponse=$(curl -s -u "$PIA_USER:$PIA_PASS" \
   --connect-to "$bestServer_meta_hostname::$bestServer_meta_IP:" \
-  --cacert `dirname $0`/"ca.rsa.4096.crt" \
+  --cacert `dirname "$0"`/"ca.rsa.4096.crt" \
   "https://$bestServer_meta_hostname/authv3/generateToken")
-echo "$generateTokenResponse"
+#echo "$generateTokenResponse"
 
 if [ "$(echo "$generateTokenResponse" | jq -r '.status')" != "OK" ]; then
   echo "Could not get a token. Please check your account credentials."
   echo
   echo "You can also try debugging by manually running the curl command:"
-  echo $ curl -vs -u \"$PIA_USER:$PIA_PASS\" --cacert `dirname $0`/ca.rsa.4096.crt \
+  echo $ curl -vs -u \"$PIA_USER:$PIA_PASS\" --cacert `dirname "$0"`/ca.rsa.4096.crt \
     --connect-to \"$bestServer_meta_hostname::$bestServer_meta_IP:\" \
     https://$bestServer_meta_hostname/authv3/generateToken
   exit 1
 fi
 
 token="$(echo "$generateTokenResponse" | jq -r '.token')"
-echo "This token will expire in 24 hours.
-"
+#echo "This token will expire in 24 hours."
+echo $bestServer_meta_hostname $token
+exit 0
 
 # just making sure this variable doesn't contain some strange string
 if [ "$PIA_PF" != true ]; then
