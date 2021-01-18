@@ -1,147 +1,89 @@
-# Manual PIA VPN Connections
+# Automatic PIA VPN Port Forwarding for OpenWRT
 
-This repository contains documentation on how to create native WireGuard and OpenVPN connections to our __NextGen network__, and also on how to enable Port Forwarding in case you require this feature. You will find a lot of information below. However if you prefer quick test, here is the __TL/DR__:
-
-```
-git clone https://github.com/pia-foss/manual-connections.git
-cd manual-connections
-./run_setup.sh
-```
-
-The scripts were written so that they are easy to read and to modify. The code also has a lot of comments, so that you find all the information you might need. We hope you will enjoy forking the repo and customizing the scripts for your setup!
+This repository is a fork of [pia-foss/manual-connections](https://github.com/pia-foss/manual-connections) and contains documentation on how initiate port forwarding automatically upon establishing an OpenVPN tunnel from an [OpenWRT](https://openwrt.org)-based device for subscribers of Private Internet Access VPN.
 
 ## Table of Contents
-
-- [Dependencies](#dependencies)
-- [Disclaimers](#disclaimers)
-- [Confirmed distributions](#confirmed-distributions)
-- [3rd Party Repositories](#3rd-party-repositories)
-- [PIA Port Forwarding](#pia-port-forwarding)
-- [Automated setup](#automated-setup)
-- [Manual PF testing](#manual-pf-testing)
+- [Prerequisites](#prerequisites)
+- [Procedure Overview](procedure-overview)
+- [Script Overview](script-overview)
+- [Dependencies](#dependencies)                                                                                                              
+- [Setup](#setup)
+- [Usage](#usage)
 - [License](#license)
 
-## Dependencies
+## Prerequisites
+The procedure described below was tested on a Netgear R7800 router running OpenWrt 19.07.5, where PIA VPN support was set up following
+[this](https://www.privateinternetaccess.com/helpdesk/guides/routers/lede-19-07-2-openvpn-setup-from-config-file) official guide.
 
-In order for the scripts to work (probably even if you do a manual setup), you will need the following packages:
+This means
+ * there is a specific PIA OpenVPN profile which is marked enabled ([x]) on the OpenVPN LuCI page
+ * the OpenVPN LuCI page is used to start/stop PIA VPN connections using the `start`/`stop` buttons
+
+## Procedure Overview
+The [parent repository](https://github.com/pia-foss/manual-connections) contains scripts that provide the following capabilities:
+ * find the best PIA server based on the signal time
+ * get a token for VPN authentification
+ * establish PIA VPN connection using OpenVPN or WireGuard
+ * enable port forwarding for an established connection
+
+The scripts in this repository let you set up OpenWRT in a way that once you establish your PIA VPN connection from the OpenVPN page in LuCI,
+the port forwarding request is performed automatically and you see the forwarded port in the System Log.
+
+These scripts **do not** automatically set up any firewall port forwardings.
+In the current state of affairs once I know the forwarded port, I set up the firewall rule manually for a specific device on the network.
+Feel free to automate this step for your needs.
+
+## Script Overview
+Below I will only list the scripts that were modified or added to the [parent repository](https://github.com/pia-foss/manual-connections).
+ * (get_region_and_token.sh)
+  * Without any parameters this script finds the closest PIA-enabled region based on signal time and lists its servers for each protocol
+  * Adding your PIA credentials to environment  `PIA_USER` and `PIA_PASS` will allow the script to also get a VPN authentication token for the region
+  * The script modification in this repository also accepts the `PIA_COUNTRY` variable to limit the region selection, since, as mentioned in [#prerequisites](prerequisites), we already have a region-based connection profile of choice.
+ * (get_token.sh): This script only outputs the VPN authentication token based on the required variables `PIA_USER` and `PIA_PASS`. When provided the `PIA_COUNTRY` variable as well, the region will be selected based on its value; otherwise by signal latency.
+ * (port_forwarding.sh): Enables you to add Port Forwarding to an existing VPN connection. Adding the environment variable `PIA_PF=true` to any of the previous scripts will also trigger this script.
+ * (hotplug.d-iface/99-pia-pf): A Procd script that kicks off the port forwarding request upon detecting a newly established PIA VPN connection.
+
+## Dependencies
+In order for the scripts to work, you will need the following packages:
  * `curl`
  * `jq`
- * (only for WireGuard) `wg-quick` and `wireguard` kernel module
- * (only for OpenVPN) `openvpn`
+ * `bash`
+ * `xargs` (the full version, not the one that comes pre-installed as part of BusyBox)
+ * (`git`)
+I am writing this list after having set up the process, so it is very likely that I miss a dependency or two.
 
-## Disclaimers
-
- * Port Forwarding is disabled on server-side in the United States.
- * These scripts do not enforce IPv6 or DNS settings, so that you have the freedom to configure your setup the way you desire it to work. This means you should have good understanding of VPN and cybersecurity in order to properly configure your setup.
- * For battle-tested security, please use the official PIA App, as it was designed to protect you in all scenarios.
- * This repo is really fresh at this moment, so please take into consideration the fact that you will probably be one of the first users that use the scripts.
- * Though we support research of open source technologies, we can not provide official support for all FOSS platforms, as there are simply too many platforms (which is a good thing). That is why we link 3rd Party repos in this README. We can not guarantee the quality of the code in the 3rd Party Repos, so use them only if you understand the risks.
-
-## Confirmed distributions
-
-The functionality of the scripts within this repository has been tested and confirmed on the following operating systems and GNU/Linux distributions:
- * Arch
- * Artix
- * Fedora 32, 33
- * FreeBSD 12.1 (tweaks are required)
- * Manjaro
- * PureOS amber
- * Raspberry Pi OS 2020-08-20
- * Ubuntu 18.04, 20.04
-
-## 3rd Party Repositories
-
-Some users have created their own repositories for manual connections, based on the information they found within this repository. We can not guarantee the quality of the code found within these 3rd party repos, but we can create a centralized list so it's easy for you to find repos contain scripts to enable PIA services for your system.
-
-| System | Fork | Language | Scope | Repository |
-|:-:|:-:|:-:|:-:|-|
-| FreeBSD | Yes | Bash | Compatibility | [glorious1/manual-connections](https://github.com/glorious1/manual-connections) |
-| Linux | No | Groovy/Java | WireGuard, PF | [Slugger/piawgmgr](https://github.com/Slugger/piawgmgr) |
-| OPNsense | No | Python | WireGuard, PF | [FingerlessGlov3s/OPNsensePIAWireguard](https://github.com/FingerlessGlov3s/OPNsensePIAWireguard) |
-| pfSense | No | Sh | OpenVPN, PF | [fm407/PIA-NextGen-PortForwarding](https://github.com/fm407/PIA-NextGen-PortForwarding) |
-| Synology | Yes | Bash | Compatibility | [steff2632/manual-connections](https://github.com/steff2632/manual-connections) |
-| Synology | No | Python | PF | [stmty9/synology](https://github.com/stmty9/synology) |
-| TrueNAS | No | Bash | PF | [dak180/TrueNAS-Scripts](https://github.com/dak180/TrueNAS-Scripts/blob/master/pia-port-forward.sh) |
-| UFW | Yes | Bash | Firewall Rules | [iPherian/manual-connections](https://github.com/iPherian/manual-connections) |
-
-## PIA Port Forwarding
-
-The PIA Port Forwarding service (a.k.a. PF) allows you run services on your own devices, and expose them to the internet by using the PIA VPN Network. The easiest way to set this up is by using a native PIA application. In case you require port forwarding on native clients, please follow this documentation in order to enable port forwarding for your VPN connection.
-
-This service can be used only AFTER establishing a VPN connection.
-
-## Automated setup
-
-In order to help you use VPN services and PF on any device, we have prepared a few bash scripts that should help you through the process of setting everything up. The scripts also contain a lot of comments, just in case you require detailed information regarding how the technology works. The functionality is controlled via environment variables, so that you have an easy time automating your setup.
-
-Here is a list of scripts you could find useful:
- * [Get the best region and a token](get_region_and_token.sh): This script helps you to get the best region and also to get a token for VPN authentication. Adding your PIA credentials to env vars `PIA_USER` and `PIA_PASS` will allow the script to also get a VPN token. The script can also trigger the WireGuard script to create a connection, if you specify `PIA_AUTOCONNECT=wireguard` or `PIA_AUTOCONNECT=openvpn_udp_standard`
- * [Connect to WireGuard](connect_to_wireguard_with_token.sh): This script allows you to connect to the VPN server via WireGuard.
- * [Connect to OpenVPN](connect_to_openvpn_with_token.sh): This script allows you to connect to the VPN server via OpenVPN.
- * [Enable Port Forwarding](port_forwarding.sh): Enables you to add Port Forwarding to an existing VPN connection. Adding the environment variable `PIA_PF=true` to any of the previous scripts will also trigger this script.
-
-## Manual PF tesing
-
-To use port forwarding on the NextGen network, first of all establish a connection with your favorite protocol. After this, you will need to find the private IP of the gateway you are connected to. In case you are WireGuard, the gateway will be part of the JSON response you get from the server, as you can see in the [bash script](https://github.com/pia-foss/manual-connections/blob/master/wireguard_and_pf.sh#L119). In case you are using OpenVPN, you can find the gateway by checking the routing table with `ip route s t all`.
-
-After connecting and finding out what the gateway is, get your payload and your signature by calling `getSignature` via HTTPS on port 19999. You will have to add your token as a GET var to prove you actually have an active account.
-
-Example:
-```bash
-bash-5.0# curl -k "https://10.4.128.1:19999/getSignature?token=$TOKEN"
-{
-    "status": "OK",
-    "payload": "eyJ0b2tlbiI6Inh4eHh4eHh4eCIsInBvcnQiOjQ3MDQ3LCJjcmVhdGVkX2F0IjoiMjAyMC0wNC0zMFQyMjozMzo0NC4xMTQzNjk5MDZaIn0=",
-    "signature": "a40Tf4OrVECzEpi5kkr1x5vR0DEimjCYJU9QwREDpLM+cdaJMBUcwFoemSuJlxjksncsrvIgRdZc0te4BUL6BA=="
-}
+## Setup
+1. Clone this repository into some location such as `/usr/local/pia`:
 ```
-
-The payload can be decoded with base64 to see your information:
-```bash
-$ echo eyJ0b2tlbiI6Inh4eHh4eHh4eCIsInBvcnQiOjQ3MDQ3LCJjcmVhdGVkX2F0IjoiMjAyMC0wNC0zMFQyMjozMzo0NC4xMTQzNjk5MDZaIn0= | base64 -d | jq 
-{
-  "token": "xxxxxxxxx",
-  "port": 47047,
-  "expires_at": "2020-06-30T22:33:44.114369906Z"
-}
+git clone git@github.com:deletio/openwrt-pia-pf.git
 ```
-This is where you can also see the port you received. Please consider `expires_at` as your request will fail if the token is too old. All ports currently expire after 2 months.
+2. Set up the (hotplug.d-iface/99-pia-pf) script.
+  1. PIA credentials. In my case the PIA OpenVPN profile refers to the `/etc/openvpn/pia.auth` file for credentials, so the same file is used in the (hotplug.d-iface/99-pia-pf) script. It only has the user name on the first line and the password on the second. Either make sure you have the same file in the same location or edit the `PIA_USER` and `PIA_PASS` variables at the top of the (hotplug.d-iface/99-pia-pf) script according to your setup.
+  2. Region. After the authentication variables the (hotplug.d-iface/99-pia-pf) script has the line `PIA_COUNTRY="Japan"`, where you should change the variable value to the region you are connecting to. The correct region name can be obtained by running the (get_region_and_token.sh) script without parameters.
+  3. Edit the line starting with `path_to_scripts=` to point the variable to the actual location of the repository.
+  4. VPN interface name. **Importantly**, if your PIA VPN interface name is not `tun0`, change it on the line that starts with `vpn_interface=`.
+3. Copy or the (hotplug.d-iface/99-pia-pf) script or create a link to it in `/etc/hotplug.d/iface`. Note that the script name starts with `99` in order for it to be lexicographically last among the scripts in that directory and therefore exeute after all others. It may not be important, but worth keeping in mind.
 
-Use the payload and the signature to bind the port on any server you desire. This is also done by curling the gateway of the VPN server you are connected to.
-```bash
-bash-5.0# curl -sGk --data-urlencode "payload=${payload}" --data-urlencode "signature=${signature}" https://10.4.128.1:19999/bindPort
-{
-    "status": "OK",
-    "message": "port scheduled for add"
-}
-bash-5.0# 
+## Usage
+
+Bring up the PIA VPN tunnel from the OpenVPN LuCI page and watch the System Log page (Status -> System Log) for messages prefixed with `user.notice hotplug`.
+If everything goes smooth, you shoud see a sequence of messages of the following kind:
 ```
-
-Call __/bindPort__ every 15 minutes, or the port will be deleted!
-
-### Testing your new PF
-
-To test that it works, you can tcpdump on the port you received:
-
+user.notice hotplug: PIA VPN interface tun0 is up. Trying to get the PIA host and token.
+user.notice hotplug: PIA_USER=p0123456 PIA_PASS=xxx PIA_COUNTRY=Japan /usr/local/pia/manual-connections/get_token.sh
+...
+user.notice hotplug: Gateway is 87.654.32.1. Obtained host tokyo123 and token
+user.notice hotplug: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+user.notice hotplug: Starting the port forwarding script with a 10s time limit.
+user.notice hotplug: PF_GATEWAY=87.654.32.1 PF_HOSTNAME=tokyo123 PIA_TOKEN="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" /usr/local/pia/manual-connections/port_forwarding.sh &
+user.notice hotplug: The forwarded port is 77777.
 ```
-bash-5.0# tcpdump -ni any port 47047
-```
+Use the port number to set up port forwarding between zones in the firewall settings (Network -> Firewall).
 
-After that, use curl __from another machine__ on the IP of the traffic server and the port specified in the payload which in our case is `47047`:
-```bash
-$ curl "http://178.162.208.237:47047"
-```
-
-You should see the traffic in your tcpdump:
-```
-bash-5.0# tcpdump -ni any port 47047
-tcpdump: verbose output suppressed, use -v or -vv for full protocol decode
-listening on any, link-type LINUX_SLL (Linux cooked v1), capture size 262144 bytes
-22:44:01.510804 IP 81.180.227.170.33884 > 10.4.143.34.47047: Flags [S], seq 906854496, win 64860, options [mss 1380,sackOK,TS val 2608022390 ecr 0,nop,wscale 7], length 0
-22:44:01.510895 IP 10.4.143.34.47047 > 81.180.227.170.33884: Flags [R.], seq 0, ack 906854497, win 0, length 0
-```
-
-If you run curl on the same machine (the one that is connected to the VPN), you will see the traffic in tcpdump anyway and the test won't prove anything. At the same time, the request will get firewall so you will not be able to access the port from the same machine. This can only be tested properly by running curl on another system.
+### Good to Know
+ * In order to keep the forwarded port binding on the server side, the (port_forwarding.sh) script will be running in the background and sending corresponding requests to the PIA server every 15 minutes.
+ * The forwarded port will be written to the `pia_forwarded_port` file in the location of the repository.
+ * Upon termination of the VPN connection the port forwarding script will be terminated and the `pia_forwarded_port` file will be removed.
 
 ## License
 This project is licensed under the [MIT (Expat) license](https://choosealicense.com/licenses/mit/), which can be found [here](/LICENSE).

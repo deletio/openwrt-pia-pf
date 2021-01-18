@@ -2,9 +2,11 @@
 
 PIA_USER=`head -1 /etc/openvpn/pia.auth`
 PIA_PASS=`tail -1 /etc/openvpn/pia.auth`
+
 PIA_COUNTRY="Japan"
 
 path_to_scripts="/usr/local/pia/manual-connections"
+
 vpn_interface="tun0"
 
 gateway=$(ifconfig ${vpn_interface} 2>/dev/null | grep 'inet addr' | cut -d: -f2 | cut -d' ' -f1 | sed 's/[^\.]*$/1/')

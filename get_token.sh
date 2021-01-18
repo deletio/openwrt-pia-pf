@@ -64,6 +64,13 @@ printServerLatency() {
 }
 export -f printServerLatency
 
+if [[ ! $PIA_USER || ! $PIA_PASS ]]; then
+  echo This script is only useful with environment variables
+  echo PIA_USER and PIA_PASS set to your PIA credentials. Example:
+  echo $ PIA_USER=p0123456 PIA_PASS=xxx $0
+  exit 1
+fi
+
 #echo -n "Getting the server list... "
 # Get all region data since we will need this on multiple occasions
 all_region_data=$(curl -s "$serverlist_url" | head -1)
@@ -100,11 +107,6 @@ else
   summarized_region_data="$( echo $regions_only |
     jq -r '.servers.meta[0].ip+" "+.id+" "+.name+" "+(.geo|tostring)' )"
 fi
-
-#echo xx $summarized_region_data xx
-
-#summarized_region_data="$(echo $summarized_region_data | xargs -I{} -d"," echo {} | sed 's/^ *//')"
-#echo xxx $summarized_region_data xxx
 
 #echo Testing regions that respond \
 #  faster than $MAX_LATENCY seconds:
@@ -152,13 +154,6 @@ bestServer_OU_hostname="$(echo $regionData | jq -r '.servers.ovpnudp[0].cn')"
 #OpenVPN TCP: $bestServer_OT_IP // $bestServer_OT_hostname
 #OpenVPN UDP: $bestServer_OU_IP // $bestServer_OU_hostname
 #"
-
-if [[ ! $PIA_USER || ! $PIA_PASS ]]; then
-  echo If you want this script to automatically get a token from the Meta
-  echo service, please add the variables PIA_USER and PIA_PASS. Example:
-  echo $ PIA_USER=p0123456 PIA_PASS=xxx ./get_region_and_token.sh
-  exit 1
-fi
 
 #echo "The ./get_region_and_token.sh script got started with PIA_USER and PIA_PASS,
 #so we will also use a meta service to get a new VPN token."
