@@ -35,13 +35,13 @@ Feel free to automate this step for your needs.
 
 ## Script Overview
 Below I will only list the scripts that were modified or added to the [parent repository](https://github.com/pia-foss/manual-connections).
- * (get_region_and_token.sh)[get_region_and_token.sh]
+ * [get_region_and_token.sh](get_region_and_token.sh)
    * Without any parameters this script finds the closest PIA-enabled region based on signal time and lists its servers for each protocol
    * Adding your PIA credentials to environment  `PIA_USER` and `PIA_PASS` will allow the script to also get a VPN authentication token for the region
    * The script modification in this repository also accepts the `PIA_COUNTRY` variable to limit the region selection, since, as mentioned in [#prerequisites](prerequisites), we already have a region-based connection profile of choice.
- * (get_token.sh)[get_token.sh]: This script only outputs the VPN authentication token based on the required variables `PIA_USER` and `PIA_PASS`. When provided the `PIA_COUNTRY` variable as well, the region will be selected based on its value; otherwise by signal latency.
- * (port_forwarding.sh)[port_forwarding.sh]: Enables you to add Port Forwarding to an existing VPN connection. Adding the environment variable `PIA_PF=true` to any of the previous scripts will also trigger this script.
- * (hotplug.d-iface/99-pia-pf)[hotplug.d-iface/99-pia-pf]: A Procd script that kicks off the port forwarding request upon detecting a newly established PIA VPN connection.
+ * [get_token.sh](get_token.sh): This script only outputs the VPN authentication token based on the required variables `PIA_USER` and `PIA_PASS`. When provided the `PIA_COUNTRY` variable as well, the region will be selected based on its value; otherwise by signal latency.
+ * [port_forwarding.sh](port_forwarding.sh): Enables you to add Port Forwarding to an existing VPN connection. Adding the environment variable `PIA_PF=true` to any of the previous scripts will also trigger this script.
+ * [hotplug.d-iface/99-pia-pf](hotplug.d-iface/99-pia-pf): A Procd script that kicks off the port forwarding request upon detecting a newly established PIA VPN connection.
 
 ## Dependencies
 In order for the scripts to work, you will need the following packages:
@@ -58,12 +58,12 @@ I am writing this list after having set up the process, so it is very likely tha
 ```
 git clone git@github.com:deletio/openwrt-pia-pf.git
 ```
-2. Set up the (hotplug.d-iface/99-pia-pf)[hotplug.d-iface/99-pia-pf] script.
-   1. PIA credentials. In my case the PIA OpenVPN profile refers to the `/etc/openvpn/pia.auth` file for credentials, so the same file is used in the (hotplug.d-iface/99-pia-pf)[hotplug.d-iface/99-pia-pf] script. It only has the user name on the first line and the password on the second. Either make sure you have the same file in the same location or edit the `PIA_USER` and `PIA_PASS` variables at the top of the (hotplug.d-iface/99-pia-pf)[hotplug.d-iface/99-pia-pf] script according to your setup.
-   2. Region. After the authentication variables the (hotplug.d-iface/99-pia-pf)[hotplug.d-iface/99-pia-pf] script has the line `PIA_COUNTRY="Japan"`, where you should change the variable value to the region you are connecting to. The correct region name can be obtained by running the (get_region_and_token.sh) script without parameters.
+2. Set up the [hotplug.d-iface/99-pia-pf](hotplug.d-iface/99-pia-pf) script.
+   1. PIA credentials. In my case the PIA OpenVPN profile refers to the `/etc/openvpn/pia.auth` file for credentials, so the same file is used in the [hotplug.d-iface/99-pia-pf](hotplug.d-iface/99-pia-pf) script. It only has the user name on the first line and the password on the second. Either make sure you have the same file in the same location or edit the `PIA_USER` and `PIA_PASS` variables at the top of the [hotplug.d-iface/99-pia-pf](hotplug.d-iface/99-pia-pf) script according to your setup.
+   2. Region. After the authentication variables the [hotplug.d-iface/99-pia-pf](hotplug.d-iface/99-pia-pf) script has the line `PIA_COUNTRY="Japan"`, where you should change the variable value to the region you are connecting to. The correct region name can be obtained by running the [get_region_and_token.sh](get_region_and_token.sh) script without parameters.
    3. Edit the line starting with `path_to_scripts=` to point the variable to the actual location of the repository.
    4. VPN interface name. **Importantly**, if your PIA VPN interface name is not `tun0`, change it on the line that starts with `vpn_interface=`.
-3. Copy or the (hotplug.d-iface/99-pia-pf)[hotplug.d-iface/99-pia-pf] script or create a link to it in `/etc/hotplug.d/iface`. Note that the script name starts with `99` in order for it to be lexicographically last among the scripts in that directory and therefore exeute after all others. It may not be important, but worth keeping in mind.
+3. Copy or the [hotplug.d-iface/99-pia-pf](hotplug.d-iface/99-pia-pf) script or create a link to it in `/etc/hotplug.d/iface`. Note that the script name starts with `99` in order for it to be lexicographically last among the scripts in that directory and therefore exeute after all others. It may not be important, but worth keeping in mind.
 
 ## Usage
 
@@ -82,7 +82,7 @@ user.notice hotplug: The forwarded port is 77777.
 Use the port number to set up port forwarding between zones in the firewall settings (Network -> Firewall).
 
 ### Good to Know
- * In order to keep the forwarded port binding on the server side, the (port_forwarding.sh) script will be running in the background and sending corresponding requests to the PIA server every 15 minutes.
+ * In order to keep the forwarded port binding on the server side, the [port_forwarding.sh](port_forwarding.sh) script will be running in the background and sending corresponding requests to the PIA server every 15 minutes.
  * The forwarded port will be written to the `pia_forwarded_port` file in the location of the repository.
  * Upon termination of the VPN connection the port forwarding script will be terminated and the `pia_forwarded_port` file will be removed.
 
