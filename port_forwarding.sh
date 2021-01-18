@@ -119,7 +119,7 @@ while true; do
     fi
     echo Port $port refreshed on $(date). \
       This port will expire on $(date --date="`echo $expires_at | sed 's/T/ /' | sed 's/\..*$//'`")
-
+    echo ${port} > `dirname $0`/pia_forwarded_port
     # sleep 15 minutes
     sleep 900
 done
