@@ -36,7 +36,7 @@ if [ "${ACTION}" = "ifup" -a "${DEVICE}" = "${vpn_interface}" ]; then
     logger -t hotplug "The forwarded port is ${pia_port}."
 fi
 
-if [ "${ACTION}" = "ifdown" -a "${GW}" = "" ]; then
+if [ "${ACTION}" = "ifdown" -a "${gateway}" = "" ]; then
     logger -t hotplug "PIA VPN interface was shut down. Will try to kill the port forwarding script in case it's running."
     ps | grep port_forwarding | sed 's/^ //' |  cut -d' ' -f 1 | xargs kill
     rm ${path_to_scripts}/pia_forwarded_port
