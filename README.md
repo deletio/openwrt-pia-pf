@@ -16,7 +16,7 @@ The procedure described below was tested on a Netgear R7800 router running OpenW
 [this](https://www.privateinternetaccess.com/helpdesk/guides/routers/lede-19-07-2-openvpn-setup-from-config-file) official guide.
 
 This means
- * there is a specific PIA OpenVPN profile which is marked enabled (- [x]) on the OpenVPN LuCI page
+ * there is a specific PIA OpenVPN profile which is marked enabled on the OpenVPN LuCI page
  * the OpenVPN LuCI page is used to start/stop PIA VPN connections using the `start`/`stop` buttons
 
 ## Procedure Overview
@@ -36,8 +36,8 @@ Feel free to automate this step for your needs.
 ## Script Overview
 Below I will only list the scripts that were modified or added to the [parent repository](https://github.com/pia-foss/manual-connections).
  * [get_region_and_token.sh](get_region_and_token.sh)
-   * Without any parameters this script finds the closest PIA-enabled region based on signal time and lists its servers for each protocol
-   * Adding your PIA credentials to environment  `PIA_USER` and `PIA_PASS` will allow the script to also get a VPN authentication token for the region
+   * Without any parameters this script finds the closest PIA-enabled region based on signal time and lists its servers for each protocol.
+   * Adding your PIA credentials to environment  `PIA_USER` and `PIA_PASS` will allow the script to also get a VPN authentication token for the region.
    * The script modification in this repository also accepts the `PIA_COUNTRY` variable to limit the region selection, since, as mentioned in [#prerequisites](prerequisites), we already have a region-based connection profile of choice.
  * [get_token.sh](get_token.sh): This script only outputs the VPN authentication token based on the required variables `PIA_USER` and `PIA_PASS`. When provided the `PIA_COUNTRY` variable as well, the region will be selected based on its value; otherwise by signal latency.
  * [port_forwarding.sh](port_forwarding.sh): Enables you to add Port Forwarding to an existing VPN connection. Adding the environment variable `PIA_PF=true` to any of the previous scripts will also trigger this script.
